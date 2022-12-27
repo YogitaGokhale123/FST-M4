@@ -1,0 +1,30 @@
+
+
+root@7653e4d9e94f:/# vi file01.txt
+Hello World Bye World
+
+root@7653e4d9e94f:/# hdfs dfs -put ./file01.txt /user/root/
+root@7653e4d9e94f:/# hdfs dfs -ls  /user/root/
+Found 2 items
+-rw-r--r--   1 root supergroup         22 2022-12-16 12:43 /user/root/file01.txt
+drwxr-xr-x   - root supergroup          0 2022-12-16 10:44 /user/root/input
+root@7653e4d9e94f:/# vi wordcount.pig
+
+-- Load input file from HDFS
+inputFile = LOAD 'hdfs:///user/root/file01.txt' AS (line);
+-- Tokeize each word in the file (Map)
+words = FOREACH inputFile GENERATE FLATTEN(TOKENIZE(line)) AS word;
+-- Combine the words from the above stage
+grpd = GROUP words BY word;
+-- Count the occurence of each word (Reduce)
+cntd = FOREACH grpd GENERATE group, COUNT(words);
+-- Store the result in HDFS
+STORE cntd INTO 'hdfs:///user/root/results';
+
+root@7653e4d9e94f:/# pig wordcount.pig
+
+
+root@7653e4d9e94f:/# hdfs dfs -cat /user/root/results/part-r-00000
+Bye     1
+Hello   1
+World   2
